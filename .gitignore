@@ -1,0 +1,46 @@
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Variáveis e segredos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dados médicos e pessoais
+data/private/
+data/raw/
+exams/
+medical-records/
+patient-data/
+uploads/
+*.dcm
+*.dicom
+
+# Documentos médicos potencialmente sensíveis
+*.pdf
+*.zip
+
+# Dependências e builds
+node_modules/
+dist/
+build/
+.next/
+coverage/
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
