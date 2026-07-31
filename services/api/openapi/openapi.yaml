@@ -1,0 +1,428 @@
+openapi: 3.1.0
+info:
+  title: HealthOS API
+  version: 0.1.0
+  description: Baseline contract for the HealthOS platform.
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development
+tags:
+  - name: People
+  - name: Documents
+  - name: DiagnosticReports
+  - name: Observations
+  - name: Medications
+  - name: Devices
+  - name: AIInsights
+
+paths:
+  /people:
+    post:
+      tags: [People]
+      summary: Create a person
+      operationId: createPerson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePersonRequest'
+      responses:
+        '201':
+          description: Person created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /people/{personId}:
+    get:
+      tags: [People]
+      summary: Get a person
+      operationId: getPerson
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+      responses:
+        '200':
+          description: Person found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /people/{personId}/documents:
+    get:
+      tags: [Documents]
+      summary: List documents
+      operationId: listDocuments
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Documents listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentPage'
+
+  /people/{personId}/diagnostic-reports:
+    get:
+      tags: [DiagnosticReports]
+      summary: List diagnostic reports
+      operationId: listDiagnosticReports
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Reports listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiagnosticReportPage'
+
+  /people/{personId}/observations:
+    get:
+      tags: [Observations]
+      summary: List observations
+      operationId: listObservations
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+        - name: definitionId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Observations listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Observation'
+
+  /people/{personId}/medication-statements:
+    get:
+      tags: [Medications]
+      summary: List medication statements
+      operationId: listMedicationStatements
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+      responses:
+        '200':
+          description: Medication statements listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MedicationStatement'
+
+  /people/{personId}/devices:
+    get:
+      tags: [Devices]
+      summary: List connected devices
+      operationId: listDevices
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+      responses:
+        '200':
+          description: Devices listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Device'
+
+  /people/{personId}/ai-insights:
+    get:
+      tags: [AIInsights]
+      summary: List AI insights
+      operationId: listAIInsights
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+      responses:
+        '200':
+          description: Insights listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AIInsight'
+
+components:
+  parameters:
+    PersonId:
+      name: personId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    CreatePersonRequest:
+      type: object
+      required: [fullName]
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+        birthDate:
+          type: string
+          format: date
+        biologicalSex:
+          type: string
+          nullable: true
+
+    Person:
+      type: object
+      required: [id, fullName, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+          nullable: true
+        biologicalSex:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Document:
+      type: object
+      required: [id, documentType, originalFileName, uploadedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentType:
+          type: string
+        originalFileName:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
+
+    DocumentPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Document'
+
+    DiagnosticReport:
+      type: object
+      required: [id, title, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        category:
+          type: string
+          nullable: true
+        issuedAt:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+
+    DiagnosticReportPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/DiagnosticReport'
+
+    Observation:
+      type: object
+      required: [id, originalName, verificationStatus]
+      properties:
+        id:
+          type: string
+          format: uuid
+        originalName:
+          type: string
+        verificationStatus:
+          type: string
+        effectiveAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    MedicationStatement:
+      type: object
+      required: [id, medicationId, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        medicationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    Device:
+      type: object
+      required: [id, deviceType]
+      properties:
+        id:
+          type: string
+          format: uuid
+        manufacturer:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        deviceType:
+          type: string
+
+    AIInsight:
+      type: object
+      required: [id, insightType, title, content, modelProvider, modelName, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        insightType:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        confidence:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          nullable: true
+        modelProvider:
+          type: string
+        modelName:
+          type: string
+        status:
+          type: string
+        limitations:
+          type: string
+          nullable: true
+
+    PageMetadata:
+      type: object
+      required: [page, pageSize, totalItems, totalPages]
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalItems:
+          type: integer
+        totalPages:
+          type: integer
+
+    ProblemDetails:
+      type: object
+      required: [type, title, status, correlationId]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        correlationId:
+          type: string
+          format: uuid
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              code:
+                type: string
+              message:
+                type: string
