@@ -34,8 +34,8 @@ services:
     restart: unless-stopped
 
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@healthos.local
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: admin@healthos-app.com
+      PGADMIN_DEFAULT_PASSWORD: HealthOS_Admin_2026
 
     ports:
       - "5050:80"
