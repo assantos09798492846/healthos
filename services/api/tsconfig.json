@@ -2,27 +2,18 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES2022",
-
     "outDir": "./dist",
-
     "strict": true,
-
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-
     "allowSyntheticDefaultImports": true,
-
     "sourceMap": true,
-
     "declaration": true,
-
     "removeComments": true,
-
     "incremental": true,
-
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "rootDir": "./src"
   },
-
   "include": [
     "src/**/*.ts"
   ]

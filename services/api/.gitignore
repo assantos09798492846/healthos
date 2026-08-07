@@ -1,0 +1,13 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/src/generated/prisma
+
+# Prisma local files
+.env
+src/generated/prisma/
+storage/
+
+# TypeScript incremental build cache
+*.tsbuildinfo

@@ -1,0 +1,192 @@
+// HealthOS — núcleo clínico inicial
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  HEALTH_PROFESSIONAL
+  VIEWER
+}
+
+enum SexAtBirth {
+  MALE
+  FEMALE
+  INTERSEX
+  NOT_INFORMED
+}
+
+enum ClinicalDocumentType {
+  LABORATORY_REPORT
+  IMAGING_REPORT
+  PRESCRIPTION
+  MEDICAL_REPORT
+  VACCINATION_RECORD
+  DISCHARGE_SUMMARY
+  OTHER
+}
+
+enum MedicationStatus {
+  ACTIVE
+  SUSPENDED
+  COMPLETED
+  CANCELLED
+}
+
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  IMPORT
+  EXPORT
+  AI_ANALYSIS
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  email        String     @unique @db.VarChar(320)
+  displayName  String     @map("display_name") @db.VarChar(160)
+  role         UserRole   @default(OWNER)
+  passwordHash String?    @map("password_hash") @db.VarChar(255)
+  isActive     Boolean    @default(true) @map("is_active")
+  patient      Patient?
+  auditLogs    AuditLog[]
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Patient {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @unique @map("user_id") @db.Uuid
+  fullName      String         @map("full_name") @db.VarChar(200)
+  birthDate     DateTime       @map("birth_date") @db.Date
+  sexAtBirth    SexAtBirth     @map("sex_at_birth")
+  cpf           String?        @unique @db.VarChar(14)
+  bloodType     String?        @map("blood_type") @db.VarChar(5)
+  heightCm      Decimal?       @map("height_cm") @db.Decimal(5, 2)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medicalRecord MedicalRecord?
+  documents     Document[]
+  labResults    LabResult[]
+  medications   Medication[]
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@index([fullName])
+  @@map("patients")
+}
+
+model MedicalRecord {
+  id              String   @id @default(uuid()) @db.Uuid
+  patientId       String   @unique @map("patient_id") @db.Uuid
+  clinicalSummary String?  @map("clinical_summary") @db.Text
+  relevantHistory String?  @map("relevant_history") @db.Text
+  familyHistory   String?  @map("family_history") @db.Text
+  generalNotes    String?  @map("general_notes") @db.Text
+  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("medical_records")
+}
+
+model Document {
+  id            String               @id @default(uuid()) @db.Uuid
+  patientId     String               @map("patient_id") @db.Uuid
+  type          ClinicalDocumentType
+  title         String               @db.VarChar(250)
+  originalName  String               @map("original_name") @db.VarChar(255)
+  mimeType      String               @map("mime_type") @db.VarChar(120)
+  storageKey    String               @unique @map("storage_key") @db.VarChar(500)
+  sha256        String?              @db.Char(64)
+  fileSizeBytes BigInt               @map("file_size_bytes")
+  documentDate  DateTime?            @map("document_date") @db.Date
+  importedAt    DateTime             @default(now()) @map("imported_at")
+  patient       Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  labResults    LabResult[]
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  @@index([patientId, documentDate])
+  @@index([sha256])
+  @@map("documents")
+}
+
+model LabResult {
+  id               String    @id @default(uuid()) @db.Uuid
+  patientId        String    @map("patient_id") @db.Uuid
+  sourceDocumentId String?   @map("source_document_id") @db.Uuid
+  testCode         String?   @map("test_code") @db.VarChar(80)
+  testName         String    @map("test_name") @db.VarChar(250)
+  category         String?   @db.VarChar(120)
+  valueNumber      Decimal?  @map("value_number") @db.Decimal(18, 6)
+  valueText        String?   @map("value_text") @db.VarChar(500)
+  unit             String?   @db.VarChar(50)
+  referenceLow     Decimal?  @map("reference_low") @db.Decimal(18, 6)
+  referenceHigh    Decimal?  @map("reference_high") @db.Decimal(18, 6)
+  referenceText    String?   @map("reference_text") @db.VarChar(500)
+  interpretation   String?   @db.VarChar(80)
+  collectedAt      DateTime? @map("collected_at")
+  reportedAt       DateTime? @map("reported_at")
+  rawData          Json?     @map("raw_data")
+  patient          Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  sourceDocument   Document? @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@index([patientId, testName])
+  @@index([patientId, collectedAt])
+  @@index([sourceDocumentId])
+  @@map("lab_results")
+}
+
+model Medication {
+  id          String           @id @default(uuid()) @db.Uuid
+  patientId   String           @map("patient_id") @db.Uuid
+  genericName String           @map("generic_name") @db.VarChar(200)
+  brandName   String?          @map("brand_name") @db.VarChar(200)
+  dose        String?          @db.VarChar(100)
+  route       String?          @db.VarChar(80)
+  frequency   String?          @db.VarChar(150)
+  indication  String?          @db.VarChar(300)
+  startDate   DateTime?        @map("start_date") @db.Date
+  endDate     DateTime?        @map("end_date") @db.Date
+  status      MedicationStatus @default(ACTIVE)
+  notes       String?          @db.Text
+  patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@index([patientId, status])
+  @@map("medications")
+}
+
+model AuditLog {
+  id            String      @id @default(uuid()) @db.Uuid
+  userId        String?     @map("user_id") @db.Uuid
+  action        AuditAction
+  entityType    String      @map("entity_type") @db.VarChar(100)
+  entityId      String?     @map("entity_id") @db.VarChar(100)
+  correlationId String?     @map("correlation_id") @db.VarChar(100)
+  ipAddress     String?     @map("ip_address") @db.VarChar(64)
+  metadata      Json?
+  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@index([correlationId])
+  @@map("audit_logs")
+}
