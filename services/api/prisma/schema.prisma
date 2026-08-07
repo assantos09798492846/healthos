@@ -103,21 +103,22 @@ model MedicalRecord {
 }
 
 model Document {
-  id            String               @id @default(uuid()) @db.Uuid
-  patientId     String               @map("patient_id") @db.Uuid
-  type          ClinicalDocumentType
-  title         String               @db.VarChar(250)
-  originalName  String               @map("original_name") @db.VarChar(255)
-  mimeType      String               @map("mime_type") @db.VarChar(120)
-  storageKey    String               @unique @map("storage_key") @db.VarChar(500)
-  sha256        String?              @db.Char(64)
-  fileSizeBytes BigInt               @map("file_size_bytes")
-  documentDate  DateTime?            @map("document_date") @db.Date
-  importedAt    DateTime             @default(now()) @map("imported_at")
-  patient       Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  labResults    LabResult[]
-  createdAt     DateTime             @default(now()) @map("created_at")
-  updatedAt     DateTime             @updatedAt @map("updated_at")
+  id             String                  @id @default(uuid()) @db.Uuid
+  patientId      String                  @map("patient_id") @db.Uuid
+  type           ClinicalDocumentType
+  title          String                  @db.VarChar(250)
+  originalName   String                  @map("original_name") @db.VarChar(255)
+  mimeType       String                  @map("mime_type") @db.VarChar(120)
+  storageKey     String                  @unique @map("storage_key") @db.VarChar(500)
+  sha256         String?                 @db.Char(64)
+  fileSizeBytes  BigInt                  @map("file_size_bytes")
+  documentDate   DateTime?               @map("document_date") @db.Date
+  importedAt     DateTime                @default(now()) @map("imported_at")
+  patient        Patient                 @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  labResults     LabResult[]
+  processingJobs DocumentProcessingJob[]
+  createdAt      DateTime                @default(now()) @map("created_at")
+  updatedAt      DateTime                @updatedAt @map("updated_at")
 
   @@index([patientId, documentDate])
   @@index([sha256])
@@ -189,4 +190,47 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([correlationId])
   @@map("audit_logs")
+}
+
+enum DocumentProcessingStatus {
+  QUEUED
+  EXTRACTING_TEXT
+  OCR
+  PARSING
+  VALIDATING
+  REVIEW_REQUIRED
+  COMPLETED
+  FAILED
+}
+
+enum DocumentProcessingMethod {
+  NATIVE_TEXT
+  OCR
+  HYBRID
+}
+
+model DocumentProcessingJob {
+  id         String                    @id @default(uuid()) @db.Uuid
+  documentId String                    @map("document_id") @db.Uuid
+  status     DocumentProcessingStatus  @default(QUEUED)
+  method     DocumentProcessingMethod?
+
+  progress       Int  @default(0)
+  pagesTotal     Int? @map("pages_total")
+  pagesProcessed Int  @default(0) @map("pages_processed")
+
+  extractedText String? @map("extracted_text") @db.Text
+  errorMessage  String? @map("error_message") @db.Text
+
+  startedAt  DateTime? @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, createdAt])
+  @@index([status, createdAt])
+  @@map("document_processing_jobs")
 }
