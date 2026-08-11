@@ -1,0 +1,19 @@
+# Backlog
+- OCR fallback
+- Clinical Parser
+- Catálogo canônico de exames
+- Normalização de unidades
+- Detecção de referências por sexo/idade
+- Deduplicação de LabResult
+- Revisão manual de baixa confiança
+- IA clínica com evidências
+- Timeline
+- Gráficos de tendência
+- Relatórios médicos
+- Exportação PDF
+- FHIR/HL7
+- DICOM
+- Web
+- Mobile
+- LGPD
+- Auditoria
